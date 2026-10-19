@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "doppelkopf-manager"
+version = "0.1.0"
+description = "Robuste Ablösung der Doppelkopf-Excel-Arbeitsmappe"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "alembic>=1.13,<2",
+  "pydantic-settings>=2.5,<3",
+  "psycopg[binary]>=3.2,<4",
+  "segno>=1.6.6,<1.7",
+  "sqlalchemy>=2.0,<3",
+  "streamlit>=1.57,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.11,<2",
+  "oletools>=0.60,<1",
+  "pytest>=8.3,<9",
+  "pytest-cov>=5,<7",
+  "ruff>=0.6,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/doppelkopf_app"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers --strict-config --basetemp=.pytest-tmp"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["doppelkopf_app"]

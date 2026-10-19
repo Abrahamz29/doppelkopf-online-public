@@ -1,0 +1,66 @@
+[theme]
+showWidgetBorder = true
+showSidebarBorder = true
+baseRadius = "10px"
+buttonRadius = "10px"
+font = "sans-serif"
+linkUnderline = false
+
+[theme.light]
+primaryColor = "#8B1E1E"
+backgroundColor = "#FFF9E8"
+secondaryBackgroundColor = "#F2E5C4"
+textColor = "#241A12"
+borderColor = "#C8A86C"
+linkColor = "#7A1919"
+greenColor = "#2E7D32"
+redColor = "#B3261E"
+orangeColor = "#A85B00"
+yellowColor = "#806500"
+blueColor = "#315C9B"
+violetColor = "#75468E"
+grayColor = "#6B6158"
+dataframeBorderColor = "#C8A86C"
+dataframeHeaderBackgroundColor = "#E8D7AC"
+chartCategoricalColors = ["#8B1E1E", "#2E7D32", "#315C9B", "#75468E", "#A85B00", "#6B6158"]
+
+[theme.light.sidebar]
+backgroundColor = "#F2E5C4"
+secondaryBackgroundColor = "#E8D7AC"
+textColor = "#241A12"
+primaryColor = "#8B1E1E"
+borderColor = "#C8A86C"
+linkColor = "#7A1919"
+
+[theme.dark]
+primaryColor = "#C84D4D"
+backgroundColor = "#15110E"
+secondaryBackgroundColor = "#251D18"
+textColor = "#F3EBDD"
+borderColor = "#6D5940"
+linkColor = "#F0A8A0"
+greenColor = "#70C77A"
+redColor = "#EF7777"
+orangeColor = "#E8A85B"
+yellowColor = "#E3D178"
+blueColor = "#7FB0EA"
+violetColor = "#C5A0E8"
+grayColor = "#A99B8D"
+dataframeBorderColor = "#6D5940"
+dataframeHeaderBackgroundColor = "#2D241E"
+chartCategoricalColors = ["#EF7777", "#70C77A", "#7FB0EA", "#C5A0E8", "#E8A85B", "#E3D178"]
+
+[theme.dark.sidebar]
+backgroundColor = "#100D0B"
+secondaryBackgroundColor = "#211A16"
+textColor = "#F3EBDD"
+primaryColor = "#D85B5B"
+borderColor = "#493B31"
+linkColor = "#F0A8A0"
+
+[server]
+headless = true
+address = "0.0.0.0"
+
+[browser]
+gatherUsageStats = false
