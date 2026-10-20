@@ -1,6 +1,8 @@
 from datetime import date, datetime
+from typing import Any
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     Date,
     DateTime,
@@ -195,3 +197,38 @@ class TempoResetRecord(Base):
         ForeignKey("game_sessions.id", ondelete="CASCADE"), index=True
     )
     reset_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class IsarPlayerRecord(Base):
+    __tablename__ = "isar_players"
+    source_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), unique=True
+    )
+
+
+class IsarSessionRecord(Base):
+    __tablename__ = "isar_sessions"
+    source_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("game_sessions.id", ondelete="CASCADE"), unique=True
+    )
+    sha256: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+class IsarGameRecord(Base):
+    __tablename__ = "isar_games"
+    __table_args__ = (
+        UniqueConstraint("source_session_id", "source_number"),
+        CheckConstraint("source_number > 0", name="ck_isar_game_number"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_session_id: Mapped[str] = mapped_column(
+        ForeignKey("isar_sessions.source_id", ondelete="CASCADE")
+    )
+    source_number: Mapped[int] = mapped_column(Integer)
+    round_id: Mapped[int | None] = mapped_column(
+        ForeignKey("rounds.id", ondelete="SET NULL"), unique=True
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON)
