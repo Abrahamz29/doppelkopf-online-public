@@ -71,10 +71,21 @@ def render_point_distribution(statistics: Statistics) -> None:
                 "name": "point_distribution", "value": "Gesamt",
                 "bind": {"input": "select", "options": list(distributions),
                          "name": "Punkteverteilung für"},
+            }, {
+                "name": "normalize_distribution", "value": True,
+                "bind": {"input": "checkbox", "name": "Normalisieren"},
             }],
             "transform": [
                 {"calculate": "datum[point_distribution]", "as": "Häufigkeit"},
                 {"calculate": "point_distribution", "as": "Auswahl"},
+                {"joinaggregate": [
+                    {"op": "sum", "field": "Häufigkeit", "as": "Spiele im Filter"},
+                ]},
+                {"calculate": "datum['Spiele im Filter'] > 0 "
+                              "? datum['Häufigkeit'] / datum['Spiele im Filter'] : 0",
+                 "as": "Anteil"},
+                {"calculate": "normalize_distribution ? datum.Anteil : datum['Häufigkeit']",
+                 "as": "Darstellung"},
             ],
             "layer": [{"mark": {"type": "bar"}, "encoding": {
                 "x": {
@@ -83,14 +94,24 @@ def render_point_distribution(statistics: Statistics) -> None:
                     "axis": {"values": point_values, "labelAngle": -90},
                 },
                 "y": {
-                    "field": "Häufigkeit", "type": "quantitative",
-                    "axis": {"format": "d", "tickMinStep": 1,
+                    "field": "Darstellung", "type": "quantitative",
+                    "scale": {
+                        "domainMin": 0, "nice": False,
+                        "domainMax": {"expr": "normalize_distribution ? 1 : "
+                                      f"{max(1, max(counts['Gesamt'].values()))}"},
+                    },
+                    "axis": {"title": "Häufigkeit",
+                             "labelExpr": "normalize_distribution "
+                                          "? format(datum.value, '.0%') : format(datum.value, 'd')",
+                             "tickCount": 6,
+                             "tickMinStep": {"expr": "normalize_distribution ? 0.2 : 1"},
                              "minExtent": 45, "maxExtent": 45},
                 },
                 "tooltip": [
                     {"field": "Auswahl", "type": "nominal"},
                     {"field": "Punktewert", "type": "ordinal"},
                     {"field": "Häufigkeit", "type": "quantitative"},
+                    {"field": "Anteil", "type": "quantitative", "format": ".1%"},
                 ],
             }}, {
                 "transform": [

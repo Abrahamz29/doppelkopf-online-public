@@ -51,5 +51,28 @@ Die frühere Prüfung eines einzelnen Spieltags deckte den gemeldeten Fehler in
 der Gesamtstatistik nicht ab. Abnahme jetzt ausdrücklich mit Gesamtstatistik:
 In beiden Apps alle Optionen mehrfach wechseln, tatsächliche Balkenhäufigkeiten
 und unveränderte X-Achse prüfen; andere Kennzahlfilter müssen erhalten bleiben.
+Cloud-Abnahme nach Deploy von `751ce15`/`cdae163` erfolgreich: ausdrücklich
+Gesamtstatistik in beiden Apps geladen. Sichtbare SVG-Balkenhäufigkeiten online:
+Gesamt 1700, Re 811, Kontra 391, Solo Re 326; normale App: Gesamt 154, Re 79,
+Kontra 38, Solo Re 28. Nach Rückkehr zu Gesamt sind sämtliche ursprünglichen
+Balkenbeschriftungen identisch. Bei jedem Wechsel bleiben X-Domäne und
+Seitenlauf-Marker unverändert. Ruff/Mypy erfolgreich; vollständige Suite 538
+bestanden/28 übersprungen, zwei danach ergänzte Aggregate-Regressionen ebenfalls
+bestanden; Online-Veröffentlichungsrepository 23 Tests bestanden.
+
+Normalisierung vom 21.10.2026: Die native Checkbox „Normalisieren“ ist beim
+Neuaufbau der Auswertung standardmäßig aktiv. Jeder Balken zeigt dann seinen
+Anteil an allen Spielen des gewählten Filters; die Balken summieren sich zu
+100 Prozent, ein leerer Filter bleibt bei null ohne Division durch null.
+Beispiel: Häufigkeiten 2 und 1 entsprechen 66,7 und 33,3 Prozent.
+Die Y-Achse ist in allen vier Ansichten fest 0–100 Prozent. Ohne Normalisierung
+zeigt sie absolute Häufigkeiten von null bis zum höchsten Gesamtbalken (mindestens
+eins), mit identischer Teilung für alle vier Filter. Die X-Achse bleibt wie zuvor
+fest. Tooltips enthalten weiterhin absolute Häufigkeit und Prozentanteil.
+Checkbox und Filter reagieren gemeinsam direkt im Browser; ein Filterwechsel
+behält den Checkboxzustand. Kein Datenbankabruf oder Seiten-Rerun beim Umschalten.
+Abnahme: In beiden Apps Gesamtstatistik öffnen, aktivierte Checkbox prüfen,
+alle Filter mit identischer Prozentachse wechseln; Checkbox deaktivieren und
+erneut alle Filter auf derselben absoluten Y-Skala prüfen, danach reaktivieren.
 
 

@@ -32,10 +32,20 @@ def test_distribution_keeps_overall_x_scale_and_ticks(selection, expected):
         "Gesamt", "Re (Normalspiel)", "Kontra (Normalspiel)", "Solo Re",
     ]
     assert spec["params"][0]["value"] == "Gesamt"
-    assert spec["transform"] == [
+    assert spec["transform"][:2] == [
         {"calculate": "datum[point_distribution]", "as": "Häufigkeit"},
         {"calculate": "point_distribution", "as": "Auswahl"},
     ]
+    assert spec["params"][1] == {
+        "name": "normalize_distribution", "value": True,
+        "bind": {"input": "checkbox", "name": "Normalisieren"},
+    }
+    y_axis = spec["layer"][0]["encoding"]["y"]
+    assert y_axis["scale"]["domainMin"] == 0
+    assert y_axis["scale"]["domainMax"] == {"expr": "normalize_distribution ? 1 : 1"}
+    assert y_axis["scale"]["nice"] is False
+    assert spec["transform"][2]["joinaggregate"][0]["field"] == "Häufigkeit"
+    assert spec["transform"][3]["calculate"].endswith(": 0")
     assert chart.call_args.kwargs["on_select"] == "ignore"
     alt.Chart.from_dict({**spec, "data": {"values": rows}})
 
@@ -68,9 +78,12 @@ def test_distribution_sends_aggregates_without_server_filter(count):
     ):
         render_point_distribution(statistics)
     server_filter.assert_not_called()
-    rows, _spec = chart.call_args.args
+    rows, spec = chart.call_args.args
     assert rows == [{"Punktewert": 4, "Gesamt": count, "Re (Normalspiel)": count,
                      "Kontra (Normalspiel)": 0, "Solo Re": 0}]
+    assert spec["layer"][0]["encoding"]["y"]["scale"]["domainMax"] == {
+        "expr": f"normalize_distribution ? 1 : {count}",
+    }
 
 
 @pytest.mark.parametrize("count", [1, 1000])
