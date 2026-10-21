@@ -11,7 +11,7 @@ Beispiel: Re-Normalspiel mit 4 Punkten, Kontra-Normalspiel mit 4 Punkten und
 gewonnenes Solo mit 12 Solistenpunkten ergeben Gesamt 4:2/12:1, Re 4:1,
 Kontra 4:1 und Solo Re 12:1. Bockpunkte bleiben enthalten.
 Leere Kategorien zeigen einen Hinweis. Der Filter gilt innerhalb des ausgewählten
-Spieltags bzw. Datumsbereichs und aktualisiert nur sein Diagramm per Fragment.
+Spieltags bzw. Datumsbereichs und aktualisiert nur sein Diagramm im Browser.
 Keine Schemaänderung. Domain- und Streamlit-Tests sichern Trennung, Häufigkeiten,
 Nullrunden, leere Auswahl und Wechsel der Auswertung ab.
 Abnahme: In beiden Apps Statistik öffnen, alle vier Optionen für einen Spieltag
@@ -33,5 +33,23 @@ für Y-Beschriftungen verhindert seitliches Verschieben bei anderen Häufigkeite
 Regressionen: `test_statistics_charts.py` prüft Achsendomäne, Teilung und Nullwerte
 für alle Filter sowie einen leeren Filter. Abnahme: In beiden Online-Apps die vier
 Optionen wechseln und identische X-Beschriftungen und Balkenpositionen prüfen.
+Cloud-Abnahme erfolgreich: Nach Deploy von `4191689`/`ee88cf1` bleiben beim
+Wechsel Gesamt → Solo Re in der Spieltag-App alle fünf X-Werte (3, 4, 6, 10, 12)
+und in der Online-App alle 14 X-Werte (0 bis 30) samt Teilung erhalten. Auch der
+leere Solo-Filter der Spieltag-App behält die Achse. Ruff/Mypy erfolgreich,
+538 Tests bestanden, 28 übersprungen; Online-Repository: 21 Tests bestanden.
+
+Korrektur nach Nutzerfehlerbericht vom 21.10.2026: In der Gesamtstatistik der
+Online-App reagierte das Streamlit-Dropdown nicht zuverlässig, während der
+bestehende native Vega-Kennzahlfilter in derselben Ansicht sofort funktionierte.
+Die Punkteverteilung verwendet deshalb ebenfalls eine native Vega-Einzelauswahl.
+Alle vier Häufigkeiten werden einmal je Punktewert übertragen; Umschalten
+berechnet die Balkenhöhen direkt im Browser ohne Python-Rerun oder Datenbankabruf.
+X-Achse und Nullwerte bleiben fest. Ein leerer Filter zeigt seinen Hinweis im
+Diagramm. Ein vollständiger Neuaufbau der Auswertung setzt den Filter auf Gesamt.
+Die frühere Prüfung eines einzelnen Spieltags deckte den gemeldeten Fehler in
+der Gesamtstatistik nicht ab. Abnahme jetzt ausdrücklich mit Gesamtstatistik:
+In beiden Apps alle Optionen mehrfach wechseln, tatsächliche Balkenhäufigkeiten
+und unveränderte X-Achse prüfen; andere Kennzahlfilter müssen erhalten bleiben.
 
 

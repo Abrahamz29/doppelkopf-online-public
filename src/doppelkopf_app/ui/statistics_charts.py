@@ -48,33 +48,35 @@ PAIR_BAR_METRICS: dict[str, Callable[[PairStatistics], int | Decimal]] = {
 }
 
 
-@st.fragment
 def render_point_distribution(statistics: Statistics) -> None:
-    """Filter precomputed frequencies without reloading the statistics page."""
+    """Switch aggregate frequencies in the browser, keeping the overall X axis."""
     distributions = {
         "Gesamt": statistics.point_frequency,
         "Re (Normalspiel)": statistics.re_point_frequency,
         "Kontra (Normalspiel)": statistics.kontra_point_frequency,
         "Solo Re": statistics.solo_re_point_frequency,
     }
-    selection = st.selectbox(
-        "Punkteverteilung für", distributions, key="statistics-point-distribution",
-        help="Re und Kontra: gewonnene Normalspiele ohne Solos. "
-        "Solo Re: gewonnene Solos, mit dem dreifachen Punktewert des Solisten. "
-        "Gesamt: alle Spiele einschließlich verlorener Solos und Nullrunden.",
-    )
-    frequency = distributions[selection]
-    if not frequency:
-        st.info("Für diesen Filter sind keine Spiele vorhanden.")
     point_values = [points for points, _count in statistics.point_frequency]
     if not point_values:
+        st.info("Für diese Auswertung sind keine Spiele vorhanden.")
         return
-    counts = dict(frequency)
+    counts = {name: dict(frequency) for name, frequency in distributions.items()}
     st.vega_lite_chart(
-        [{"Punktewert": points, "Häufigkeit": counts.get(points, 0)} for points in point_values],
+        [{"Punktewert": points,
+          **{name: frequency.get(points, 0) for name, frequency in counts.items()}}
+         for points in point_values],
         {
-            "mark": {"type": "bar"},
-            "encoding": {
+            "usermeta": {"embedOptions": {"renderer": "svg"}},
+            "params": [{
+                "name": "point_distribution", "value": "Gesamt",
+                "bind": {"input": "select", "options": list(distributions),
+                         "name": "Punkteverteilung für"},
+            }],
+            "transform": [
+                {"calculate": "datum[point_distribution]", "as": "Häufigkeit"},
+                {"calculate": "point_distribution", "as": "Auswahl"},
+            ],
+            "layer": [{"mark": {"type": "bar"}, "encoding": {
                 "x": {
                     "field": "Punktewert", "type": "ordinal", "sort": point_values,
                     "scale": {"domain": point_values},
@@ -86,12 +88,24 @@ def render_point_distribution(statistics: Statistics) -> None:
                              "minExtent": 45, "maxExtent": 45},
                 },
                 "tooltip": [
+                    {"field": "Auswahl", "type": "nominal"},
                     {"field": "Punktewert", "type": "ordinal"},
                     {"field": "Häufigkeit", "type": "quantitative"},
                 ],
-            },
+            }}, {
+                "transform": [
+                    {"aggregate": [{"op": "sum", "field": "Häufigkeit", "as": "Anzahl"}]},
+                    {"filter": "datum.Anzahl === 0"},
+                ],
+                "mark": {"type": "text", "align": "center", "baseline": "middle"},
+                "encoding": {
+                    "x": {"value": {"expr": "width / 2"}},
+                    "y": {"value": {"expr": "height / 2"}},
+                    "text": {"value": "Für diesen Filter sind keine Spiele vorhanden."},
+                },
+            }],
         },
-        key="statistics-point-distribution-chart",
+        key="statistics-point-distribution-chart", on_select="ignore",
     )
 
 

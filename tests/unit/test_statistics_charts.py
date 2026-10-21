@@ -21,16 +21,22 @@ def test_distribution_keeps_overall_x_scale_and_ticks(selection, expected):
         StatisticalRound(2, DeclaringParty.KONTRA, tuple(zip(names, (4, -4, 4, -4), strict=True))),
         StatisticalRound(3, DeclaringParty.RE, tuple(zip(names, (18, -6, -6, -6), strict=True))),
     ))
-    with (
-        patch("doppelkopf_app.ui.statistics_charts.st.selectbox", return_value=selection),
-        patch("doppelkopf_app.ui.statistics_charts.st.vega_lite_chart") as chart,
-    ):
-        render_point_distribution.__wrapped__(statistics)
+    with patch("doppelkopf_app.ui.statistics_charts.st.vega_lite_chart") as chart:
+        render_point_distribution(statistics)
     rows, spec = chart.call_args.args
     assert [row["Punktewert"] for row in rows] == [2, 4, 18]
-    assert [row["Häufigkeit"] for row in rows] == expected
-    assert spec["encoding"]["x"]["scale"]["domain"] == [2, 4, 18]
-    assert spec["encoding"]["x"]["axis"]["values"] == [2, 4, 18]
+    assert [row[selection] for row in rows] == expected
+    assert spec["layer"][0]["encoding"]["x"]["scale"]["domain"] == [2, 4, 18]
+    assert spec["layer"][0]["encoding"]["x"]["axis"]["values"] == [2, 4, 18]
+    assert spec["params"][0]["bind"]["options"] == [
+        "Gesamt", "Re (Normalspiel)", "Kontra (Normalspiel)", "Solo Re",
+    ]
+    assert spec["params"][0]["value"] == "Gesamt"
+    assert spec["transform"] == [
+        {"calculate": "datum[point_distribution]", "as": "Häufigkeit"},
+        {"calculate": "point_distribution", "as": "Auswahl"},
+    ]
+    assert chart.call_args.kwargs["on_select"] == "ignore"
     alt.Chart.from_dict({**spec, "data": {"values": rows}})
 
 
@@ -39,16 +45,32 @@ def test_empty_distribution_keeps_overall_x_axis():
     statistics = calculate_statistics(names, (
         StatisticalRound(1, DeclaringParty.RE, tuple(zip(names, (4, 4, -4, -4), strict=True))),
     ))
+    with patch("doppelkopf_app.ui.statistics_charts.st.vega_lite_chart") as chart:
+        render_point_distribution(statistics)
+    rows, spec = chart.call_args.args
+    assert rows[0]["Solo Re"] == 0
+    assert spec["layer"][0]["encoding"]["x"]["scale"]["domain"] == [4]
+    assert spec["layer"][1]["transform"][-1] == {"filter": "datum.Anzahl === 0"}
+    assert "keine Spiele" in spec["layer"][1]["encoding"]["text"]["value"]
+
+
+@pytest.mark.parametrize("count", [1, 1000])
+def test_distribution_sends_aggregates_without_server_filter(count):
+    names = ("A", "B", "C", "D")
+    statistics = calculate_statistics(names, tuple(
+        StatisticalRound(i, DeclaringParty.RE,
+                         tuple(zip(names, (4, 4, -4, -4), strict=True)))
+        for i in range(count)
+    ))
     with (
-        patch("doppelkopf_app.ui.statistics_charts.st.selectbox", return_value="Solo Re"),
-        patch("doppelkopf_app.ui.statistics_charts.st.info") as info,
+        patch("doppelkopf_app.ui.statistics_charts.st.selectbox") as server_filter,
         patch("doppelkopf_app.ui.statistics_charts.st.vega_lite_chart") as chart,
     ):
-        render_point_distribution.__wrapped__(statistics)
-    info.assert_called_once()
-    rows, spec = chart.call_args.args
-    assert rows == [{"Punktewert": 4, "Häufigkeit": 0}]
-    assert spec["encoding"]["x"]["scale"]["domain"] == [4]
+        render_point_distribution(statistics)
+    server_filter.assert_not_called()
+    rows, _spec = chart.call_args.args
+    assert rows == [{"Punktewert": 4, "Gesamt": count, "Re (Normalspiel)": count,
+                     "Kontra (Normalspiel)": 0, "Solo Re": 0}]
 
 
 @pytest.mark.parametrize("count", [1, 1000])
