@@ -45,6 +45,9 @@ def render_points_progress(
               "columnPadding": 12, "rowPadding": 8,
               "symbolStrokeWidth": 3, "offset": 5, "titlePadding": 5,
               "labelFontSize": legend_size}
+    # Dense histories can make collision-free name placement prohibitively costly.
+    # Keep every point, but use the existing accessible legend above 500 games.
+    inline_names = dashboard and len(rows) <= 500
     spec: dict[str, Any] = {
             "encoding": {
                 "x": {"field": "Spiel", "type": "quantitative",
@@ -55,11 +58,11 @@ def render_points_progress(
                       "axis": {"tickMinStep": 1, "labelFontSize": label_size}},
                 "color": {"field": "Spieler", "type": "nominal", "title": " ",
                           "scale": {"domain": names, "range": [s.color for s in ordered]},
-                          "legend": None if dashboard else legend},
+                          "legend": None if inline_names else legend},
                 "strokeDash": {"field": "Spieler", "type": "nominal", "title": " ",
                                "scale": {"domain": names,
                                          "range": [list(s.dash) for s in ordered]},
-                               "legend": None if dashboard else legend},
+                               "legend": None if inline_names else legend},
                 "tooltip": [{"field": "Spiel", "type": "quantitative"},
                             {"field": "Punkte", "type": "quantitative", "title": value_label},
                             {"field": "Spieler", "type": "nominal"}],
@@ -79,7 +82,7 @@ def render_points_progress(
     if dashboard:
         # Rounded corners stay within the label solver's stroke-radius margin.
         spec["layer"][0]["mark"]["strokeJoin"] = "round"
-    if dashboard and rows:
+    if inline_names and rows:
         add_point_label_layers(spec, rows, ordered, key=key)
     if dashboard:
         _add_desktop_right_axis(spec)
@@ -89,7 +92,7 @@ def render_points_progress(
         spec,
         width="stretch", height=height, key=key,
     )
-    if dashboard and rows:
+    if inline_names and rows:
         from doppelkopf_app.ui.point_label_metrics import mount_point_label_metrics
 
         mount_point_label_metrics(key, ordered)
