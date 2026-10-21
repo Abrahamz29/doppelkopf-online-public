@@ -74,5 +74,34 @@ behält den Checkboxzustand. Kein Datenbankabruf oder Seiten-Rerun beim Umschalt
 Abnahme: In beiden Apps Gesamtstatistik öffnen, aktivierte Checkbox prüfen,
 alle Filter mit identischer Prozentachse wechseln; Checkbox deaktivieren und
 erneut alle Filter auf derselben absoluten Y-Skala prüfen, danach reaktivieren.
+Cloud-Abnahme nach Deploy von `d953ad3`/`7da10e1` erfolgreich: Checkbox in beiden
+Apps standardmäßig aktiv; alle vier Gesamtstatistik-Filter summieren sich auf
+100 Prozent und behalten die 0–100-Prozent-Achse. Ohne Normalisierung bleibt die
+Y-Domäne online 0–211, in der normalen App 0–31 für alle Filter unverändert.
+Beispiel online Gesamt: Punktewert 3, Häufigkeit 211 von 1700, Anteil 12,4 Prozent.
+Zurückschalten stellt die Prozentansicht wieder her; X-Achse und Seitenlauf-Marker
+bleiben bei allen Wechseln gleich. Ruff/Mypy erfolgreich, Hauptrepository 540
+Tests bestanden/28 übersprungen; Online-Veröffentlichungsrepository 23 bestanden.
+
+Bockfilter vom 21.10.2026: Ein zweites natives Dropdown „Bockfilter“ ergänzt
+die Parteiauswahl. „Mit Bock“ (Standard) enthält alle Spiele einschließlich
+Bockspielen; „Ohne Bock“ enthält nur Runden ohne aktiven Bock, „Nur Bock“ nur
+Runden mit mindestens einem aktiven Bock. Maßgeblich ist `active_bocks > 0` der
+gespielten Runde, nicht ein erst für spätere Runden ausgelöster Bock. Mehrere
+aktive Böcke zählen die Runde weiterhin einmal. Punktewerte behalten ihre
+gespeicherte Höhe; Bockfaktoren werden weder entfernt noch erneut angewendet.
+Alle zwölf Kombinationen aus Partei- und Bockfilter sind möglich. Die
+Normalisierung bezieht sich auf die jeweilige Kombination; leere Kombinationen
+bleiben null und zeigen den Hinweis. Beide Achsen orientieren sich weiterhin
+an der vollständigen Auswertung (X und absolute Y) bzw. 0–100 Prozent.
+Beispiel: Re-Normalspiel mit 4 ohne Bock und Re-Normalspiel mit 8 im Bock ergeben
+unter Re/Mit Bock je einen Treffer; Re/Ohne Bock nur 4, Re/Nur Bock nur 8.
+Rundenklassifikation und Zählung liegen in der Domain; an den Browser gehen nur
+aggregierte Häufigkeiten. Kein Rerun beim Umschalten, keine Schemaänderung.
+Domain-, Diagramm- und UI-Tests sichern Kombinationen, Partitionierung, Nullrunden,
+verlorene Solos, mehrfache Böcke, feste Achsen und Standardwerte ab.
+Abnahme: In beiden Gesamtstatistiken alle drei Bockfilter mit jeder Parteiauswahl
+und mit/ohne Normalisierung durchschalten; Mit Bock muss Ohne Bock plus Nur Bock
+ergeben. Checkbox und beide Filter müssen unabhängig bleiben.
 
 

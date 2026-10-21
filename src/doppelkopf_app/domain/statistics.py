@@ -97,6 +97,16 @@ class PairStatistics:
 
 
 @dataclass(frozen=True, slots=True)
+class PointFrequencies:
+    """One frequency per game, separated by winning party and normal/solo play."""
+
+    total: tuple[tuple[int, int], ...]
+    re: tuple[tuple[int, int], ...]
+    kontra: tuple[tuple[int, int], ...]
+    solo_re: tuple[tuple[int, int], ...]
+
+
+@dataclass(frozen=True, slots=True)
 class Statistics:
     players: tuple[PlayerStatistics, ...]
     pairs: tuple[PairStatistics, ...]
@@ -111,6 +121,8 @@ class Statistics:
     re_point_frequency: tuple[tuple[int, int], ...]
     kontra_point_frequency: tuple[tuple[int, int], ...]
     solo_re_point_frequency: tuple[tuple[int, int], ...]
+    point_frequencies_without_bock: PointFrequencies
+    point_frequencies_only_bock: PointFrequencies
 
 
 def calculate_statistics(
@@ -146,6 +158,10 @@ def calculate_statistics(
     re_frequency: Counter[int] = Counter()
     kontra_frequency: Counter[int] = Counter()
     solo_re_frequency: Counter[int] = Counter()
+    bock_frequency: Counter[int] = Counter()
+    bock_re_frequency: Counter[int] = Counter()
+    bock_kontra_frequency: Counter[int] = Counter()
+    bock_solo_re_frequency: Counter[int] = Counter()
     running_wins = Counter({name: 0 for name in player_order})
     cumulative_points = []
     cumulative_wins = []
@@ -167,6 +183,8 @@ def calculate_statistics(
         is_solo = {len(winners), len(losers)} == {1, 3}
         round_point_value = max(abs(value) for value in values)
         frequency[round_point_value] += 1
+        if item.active_bocks > 0:
+            bock_frequency[round_point_value] += 1
         round_point_values.append((index, round_point_value))
         zero_count += int(is_zero)
         bock_count += int(item.active_bocks > 0)
@@ -212,10 +230,16 @@ def calculate_statistics(
             if is_solo:
                 if item.declaring_party is DeclaringParty.RE:
                     solo_re_frequency[round_point_value] += 1
+                    if item.active_bocks > 0:
+                        bock_solo_re_frequency[round_point_value] += 1
             elif item.declaring_party is DeclaringParty.RE:
                 re_frequency[round_point_value] += 1
+                if item.active_bocks > 0:
+                    bock_re_frequency[round_point_value] += 1
             elif item.declaring_party is DeclaringParty.KONTRA:
                 kontra_frequency[round_point_value] += 1
+                if item.active_bocks > 0:
+                    bock_kontra_frequency[round_point_value] += 1
 
         for name in player_order:
             if name not in score:
@@ -338,6 +362,18 @@ def calculate_statistics(
         re_point_frequency=tuple(sorted(re_frequency.items())),
         kontra_point_frequency=tuple(sorted(kontra_frequency.items())),
         solo_re_point_frequency=tuple(sorted(solo_re_frequency.items())),
+        point_frequencies_without_bock=PointFrequencies(
+            total=tuple(sorted((frequency - bock_frequency).items())),
+            re=tuple(sorted((re_frequency - bock_re_frequency).items())),
+            kontra=tuple(sorted((kontra_frequency - bock_kontra_frequency).items())),
+            solo_re=tuple(sorted((solo_re_frequency - bock_solo_re_frequency).items())),
+        ),
+        point_frequencies_only_bock=PointFrequencies(
+            total=tuple(sorted(bock_frequency.items())),
+            re=tuple(sorted(bock_re_frequency.items())),
+            kontra=tuple(sorted(bock_kontra_frequency.items())),
+            solo_re=tuple(sorted(bock_solo_re_frequency.items())),
+        ),
     )
 
 

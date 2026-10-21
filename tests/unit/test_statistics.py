@@ -1,9 +1,54 @@
+from collections import Counter
 from decimal import Decimal
 
 import pytest
 
 from doppelkopf_app.domain.scoring import DeclaringParty
 from doppelkopf_app.domain.statistics import StatisticalRound, calculate_statistics
+
+
+@pytest.mark.parametrize("active_bocks", [1, 3])
+def test_point_distribution_bock_filters_partition_every_category(active_bocks: int) -> None:
+    names = ("A", "B", "C", "D")
+    entries = [
+        (DeclaringParty.RE, (2, 2, -2, -2), 0, None),
+        (DeclaringParty.RE, (2, -2, 2, -2), 0, None),
+        (DeclaringParty.KONTRA, (4, -4, 4, -4), 0, None),
+        (DeclaringParty.RE, (9, -3, -3, -3), 0, None),
+        (DeclaringParty.KONTRA, (-12, 4, 4, 4), 0, None),
+        (DeclaringParty.NONE, (0, 0, 0, 0), 0, None),
+        (DeclaringParty.NONE, (0, 0, 0, 0), 0, ("+", "-", "-", "-")),
+        (DeclaringParty.RE, (8, 8, -8, -8), active_bocks, None),
+        (DeclaringParty.KONTRA, (8, -8, 8, -8), active_bocks, None),
+        (DeclaringParty.KONTRA, (-8, 8, -8, 8), active_bocks, None),
+        (DeclaringParty.RE, (-6, -6, 18, -6), active_bocks, None),
+        (DeclaringParty.KONTRA, (-24, 8, 8, 8), active_bocks, None),
+        (DeclaringParty.NONE, (0, 0, 0, 0), active_bocks, None),
+        (DeclaringParty.NONE, (0, 0, 0, 0), active_bocks, ("+", "+", "+", "-")),
+    ]
+    result = calculate_statistics(names, tuple(
+        StatisticalRound(i, party, tuple(zip(names, points, strict=True)),
+                         active_bocks=bocks, team_signs=signs)
+        for i, (party, points, bocks, signs) in enumerate(entries, start=1)
+    ))
+    without = result.point_frequencies_without_bock
+    only = result.point_frequencies_only_bock
+    assert without.total == ((0, 2), (2, 2), (4, 1), (9, 1), (12, 1))
+    assert only.total == ((0, 2), (8, 3), (18, 1), (24, 1))
+    assert without.re == ((2, 2),)
+    assert without.kontra == ((4, 1),)
+    assert without.solo_re == ((9, 1),)
+    assert only.re == ((8, 1),)
+    assert only.kontra == ((8, 2),)
+    assert only.solo_re == ((18, 1),)
+    assert result.bock_rounds == 7
+    for overall, plain, bock in (
+        (result.point_frequency, without.total, only.total),
+        (result.re_point_frequency, without.re, only.re),
+        (result.kontra_point_frequency, without.kontra, only.kontra),
+        (result.solo_re_point_frequency, without.solo_re, only.solo_re),
+    ):
+        assert Counter(dict(overall)) == Counter(dict(plain)) + Counter(dict(bock))
 
 
 def test_point_distributions_separate_winning_parties_and_solos() -> None:

@@ -61,6 +61,18 @@ def render_point_distribution(statistics: Statistics) -> None:
         st.info("Für diese Auswertung sind keine Spiele vorhanden.")
         return
     counts = {name: dict(frequency) for name, frequency in distributions.items()}
+    for bock_label, frequencies in (
+        ("Ohne Bock", statistics.point_frequencies_without_bock),
+        ("Nur Bock", statistics.point_frequencies_only_bock),
+    ):
+        counts.update({
+            f"{name} · {bock_label}": dict(frequency)
+            for name, frequency in zip(
+                distributions,
+                (frequencies.total, frequencies.re, frequencies.kontra, frequencies.solo_re),
+                strict=True,
+            )
+        })
     st.vega_lite_chart(
         [{"Punktewert": points,
           **{name: frequency.get(points, 0) for name, frequency in counts.items()}}
@@ -74,9 +86,14 @@ def render_point_distribution(statistics: Statistics) -> None:
             }, {
                 "name": "normalize_distribution", "value": True,
                 "bind": {"input": "checkbox", "name": "Normalisieren"},
+            }, {
+                "name": "bock_distribution", "value": "Mit Bock",
+                "bind": {"input": "select", "name": "Bockfilter",
+                         "options": ["Mit Bock", "Ohne Bock", "Nur Bock"]},
             }],
             "transform": [
-                {"calculate": "datum[point_distribution]", "as": "Häufigkeit"},
+                {"calculate": "datum[point_distribution + (bock_distribution === 'Mit Bock' "
+                              "? '' : ' · ' + bock_distribution)]", "as": "Häufigkeit"},
                 {"calculate": "point_distribution", "as": "Auswahl"},
                 {"joinaggregate": [
                     {"op": "sum", "field": "Häufigkeit", "as": "Spiele im Filter"},
@@ -86,6 +103,7 @@ def render_point_distribution(statistics: Statistics) -> None:
                  "as": "Anteil"},
                 {"calculate": "normalize_distribution ? datum.Anteil : datum['Häufigkeit']",
                  "as": "Darstellung"},
+                {"calculate": "bock_distribution", "as": "Bockfilter"},
             ],
             "layer": [{"mark": {"type": "bar"}, "encoding": {
                 "x": {
@@ -109,6 +127,7 @@ def render_point_distribution(statistics: Statistics) -> None:
                 },
                 "tooltip": [
                     {"field": "Auswahl", "type": "nominal"},
+                    {"field": "Bockfilter", "type": "nominal"},
                     {"field": "Punktewert", "type": "ordinal"},
                     {"field": "Häufigkeit", "type": "quantitative"},
                     {"field": "Anteil", "type": "quantitative", "format": ".1%"},

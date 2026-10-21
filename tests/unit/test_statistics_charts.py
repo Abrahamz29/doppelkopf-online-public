@@ -33,13 +33,21 @@ def test_distribution_keeps_overall_x_scale_and_ticks(selection, expected):
     ]
     assert spec["params"][0]["value"] == "Gesamt"
     assert spec["transform"][:2] == [
-        {"calculate": "datum[point_distribution]", "as": "Häufigkeit"},
+        {"calculate": "datum[point_distribution + (bock_distribution === 'Mit Bock' "
+                      "? '' : ' · ' + bock_distribution)]", "as": "Häufigkeit"},
         {"calculate": "point_distribution", "as": "Auswahl"},
     ]
     assert spec["params"][1] == {
         "name": "normalize_distribution", "value": True,
         "bind": {"input": "checkbox", "name": "Normalisieren"},
     }
+    assert spec["params"][2] == {
+        "name": "bock_distribution", "value": "Mit Bock",
+        "bind": {"input": "select", "name": "Bockfilter",
+                 "options": ["Mit Bock", "Ohne Bock", "Nur Bock"]},
+    }
+    assert [row[f"{selection} · Ohne Bock"] for row in rows] == expected
+    assert [row[f"{selection} · Nur Bock"] for row in rows] == [0, 0, 0]
     y_axis = spec["layer"][0]["encoding"]["y"]
     assert y_axis["scale"]["domainMin"] == 0
     assert y_axis["scale"]["domainMax"] == {"expr": "normalize_distribution ? 1 : 1"}
@@ -64,6 +72,38 @@ def test_empty_distribution_keeps_overall_x_axis():
     assert "keine Spiele" in spec["layer"][1]["encoding"]["text"]["value"]
 
 
+@pytest.mark.parametrize("selection,without,only", [
+    ("Gesamt", [2, 0, 1, 0], [0, 2, 0, 1]),
+    ("Re (Normalspiel)", [1, 0, 0, 0], [0, 1, 0, 0]),
+    ("Kontra (Normalspiel)", [1, 0, 0, 0], [0, 1, 0, 0]),
+    ("Solo Re", [0, 0, 1, 0], [0, 0, 0, 1]),
+])
+def test_distribution_combines_bock_and_party_filters(selection, without, only):
+    names = ("A", "B", "C", "D")
+    statistics = calculate_statistics(names, tuple(
+        StatisticalRound(i, party, tuple(zip(names, points, strict=True)), active_bocks=bocks)
+        for i, (party, points, bocks) in enumerate([
+            (DeclaringParty.RE, (4, 4, -4, -4), 0),
+            (DeclaringParty.KONTRA, (4, -4, 4, -4), 0),
+            (DeclaringParty.RE, (12, -4, -4, -4), 0),
+            (DeclaringParty.RE, (8, 8, -8, -8), 1),
+            (DeclaringParty.KONTRA, (8, -8, 8, -8), 2),
+            (DeclaringParty.RE, (24, -8, -8, -8), 3),
+        ])
+    ))
+    with patch("doppelkopf_app.ui.statistics_charts.st.vega_lite_chart") as chart:
+        render_point_distribution(statistics)
+    rows, spec = chart.call_args.args
+    assert [row["Punktewert"] for row in rows] == [4, 8, 12, 24]
+    assert [row[f"{selection} · Ohne Bock"] for row in rows] == without
+    assert [row[f"{selection} · Nur Bock"] for row in rows] == only
+    assert [row[selection] for row in rows] == [a + b for a, b in zip(without, only, strict=True)]
+    # Neither filter can shrink the common absolute Y scale.
+    assert spec["layer"][0]["encoding"]["y"]["scale"]["domainMax"] == {
+        "expr": "normalize_distribution ? 1 : 2",
+    }
+
+
 @pytest.mark.parametrize("count", [1, 1000])
 def test_distribution_sends_aggregates_without_server_filter(count):
     names = ("A", "B", "C", "D")
@@ -79,8 +119,11 @@ def test_distribution_sends_aggregates_without_server_filter(count):
         render_point_distribution(statistics)
     server_filter.assert_not_called()
     rows, spec = chart.call_args.args
-    assert rows == [{"Punktewert": 4, "Gesamt": count, "Re (Normalspiel)": count,
-                     "Kontra (Normalspiel)": 0, "Solo Re": 0}]
+    categories = {"Gesamt": count, "Re (Normalspiel)": count,
+                  "Kontra (Normalspiel)": 0, "Solo Re": 0}
+    assert rows == [{"Punktewert": 4, **categories,
+                     **{f"{name} · Ohne Bock": value for name, value in categories.items()},
+                     **{f"{name} · Nur Bock": 0 for name in categories}}]
     assert spec["layer"][0]["encoding"]["y"]["scale"]["domainMax"] == {
         "expr": f"normalize_distribution ? 1 : {count}",
     }
