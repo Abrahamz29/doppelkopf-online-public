@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest.mock import patch
 
 import altair as alt
@@ -7,48 +6,43 @@ import pytest
 from doppelkopf_app.domain.scoring import DeclaringParty
 from doppelkopf_app.domain.statistics import StatisticalRound, calculate_statistics
 from doppelkopf_app.ui.statistics_charts import (
-    _normalized_frequency_ceiling,
     render_point_distribution,
     render_statistics_bars,
 )
 
 
-@pytest.mark.parametrize("frequencies,expected", [
-    ([], "0.05"),
-    ([{}, {0: 0}], "0.05"),
-    ([dict.fromkeys(range(10), 1)], "0.10"),
-    ([{0: 2, 1: 3, 2: 3, 3: 3, 4: 3}], "0.25"),
-    ([{0: 1, 1: 1, 2: 1}], "0.35"),
-    ([{0: 3, 1: 3, 2: 2, 3: 2}], "0.30"),
-    ([dict.fromkeys(range(10), 1), {0: 1}], "1"),
-    ([dict.fromkeys(range(10), 1), {0: 2, 1: 1}], "0.70"),
-])
-def test_normalized_ceiling_covers_all_filters_with_exact_rounding(frequencies, expected):
-    ceiling = _normalized_frequency_ceiling(frequencies)
-    assert ceiling == Decimal(expected)
-    for frequency in frequencies:
-        total = sum(frequency.values())
-        if total:
-            assert all(Decimal(count) / Decimal(total) <= ceiling for count in frequency.values())
-
-
-def test_normalized_axis_includes_peak_of_combined_bock_filter():
+def test_peak_normalization_uses_selected_filter_peak_and_current_app_counts():
     names = ("A", "B", "C", "D")
-    # Overall peak 20%; restricting to Bock yields a 2/3 peak, requiring 70%.
+    # Peaks differ: overall/Bock = 3 games, without Bock = 2 games.
     statistics = calculate_statistics(names, tuple(
         StatisticalRound(i, DeclaringParty.RE,
                          tuple(zip(names, (points, points, -points, -points), strict=True)),
                          active_bocks=int(i < 3))
-        for i, points in enumerate([2, 2, 4, 4, 6, 6, 8, 8, 10, 10])
+        for i, points in enumerate([2, 2, 2, 4, 4, 6, 8, 8, 10, 10])
     ))
     with patch("doppelkopf_app.ui.statistics_charts.st.vega_lite_chart") as chart:
         render_point_distribution(statistics)
-    _rows, spec = chart.call_args.args
+    rows, spec = chart.call_args.args
+    assert max(row["Gesamt"] for row in rows) == 3
+    assert max(row["Gesamt · Ohne Bock"] for row in rows) == 2
+    assert max(row["Gesamt · Nur Bock"] for row in rows) == 3
+    assert spec["transform"][2]["joinaggregate"][-1] == {
+        "op": "max", "field": "Häufigkeit", "as": "Peak im Filter",
+    }
+    assert spec["transform"][4] == {
+        "calculate": "datum['Peak im Filter'] > 0 "
+                     "? datum['Häufigkeit'] / datum['Peak im Filter'] : 0",
+        "as": "Peakhöhe",
+    }
+    assert spec["transform"][5] == {
+        "calculate": "normalize_distribution ? datum['Peakhöhe'] : datum['Häufigkeit']",
+        "as": "Darstellung",
+    }
     assert spec["layer"][0]["encoding"]["y"]["scale"]["domainMax"] == {
-        "expr": "normalize_distribution ? 0.7 : 2",
+        "expr": "normalize_distribution ? 1 : 3",
     }
     assert spec["layer"][0]["encoding"]["y"]["axis"]["tickMinStep"] == {
-        "expr": "normalize_distribution ? 0.01 : 1",
+        "expr": "normalize_distribution ? 0.2 : 1",
     }
 
 
@@ -111,6 +105,7 @@ def test_empty_distribution_keeps_overall_x_axis():
         render_point_distribution(statistics)
     rows, spec = chart.call_args.args
     assert rows[0]["Solo Re"] == 0
+    assert spec["transform"][4]["calculate"].endswith(": 0")
     assert spec["layer"][0]["encoding"]["x"]["scale"]["domain"] == [4]
     assert spec["layer"][1]["transform"][-1] == {"filter": "datum.Anzahl === 0"}
     assert "keine Spiele" in spec["layer"][1]["encoding"]["text"]["value"]

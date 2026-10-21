@@ -127,5 +127,31 @@ Regressionen in `test_statistics_charts.py` sichern Rundungsgrenzen, leere
 Auswahlen und das Maximum einer kombinierten Bockauswahl ab.
 Abnahme: In beiden Apps alle zwölf Kombinationen durchschalten; kein Balken darf
 abgeschnitten werden und die Prozentachse muss in allen Kombinationen gleich bleiben.
+Cloud-Abnahme nach Deploy von `1772bd0`/`f98cf89` erfolgreich: Alle zwölf
+Gesamtstatistik-Kombinationen behalten identische Achsen und Prozentmarken ohne
+Seiten-Rerun. Online liegt das Maximum bei Solo Re/Nur Bock mit 31,58 Prozent,
+gemeinsame Achse 0–35 Prozent in Fünferschritten. In der normalen App erreicht
+Kontra/Nur Bock 60 Prozent, gemeinsame Achse 0–60 Prozent in Zehnerschritten.
+Absolute Skalen bleiben online 0–211 bzw. normal 0–31. Standardansichten
+wiederhergestellt. Ruff/Mypy erfolgreich, Hauptrepository 555 Tests bestanden/28
+übersprungen; Online-Veröffentlichungsrepository 38 bestanden.
+
+Präzisierung Peak-Normierung vom 21.10.2026: „Normalisieren“ bedeutet jetzt
+Häufigkeit geteilt durch den höchsten Balken der aktuell gewählten Partei-/Bock-
+Kombination. Jeder nichtleere Plot erreicht exakt 100 Prozent auf derselben
+Y-Achse; die Form bleibt unabhängig von der Anzahl der Spiele vergleichbar.
+Beispiele: 20/10/5 und 4/2/1 ergeben beide 100/50/25 Prozent Peakhöhe. Die
+Maxima stammen jeweils nur aus den aktuellen Daten der betreffenden App,
+Auswertung und Filterkombination, werden beim Filterwechsel neu bestimmt und
+weder zwischen Apps noch zwischen Filtern geteilt. Ein leerer Filter bleibt null.
+Tooltip „Peakhöhe“ benennt die Normierung; „Häufigkeit“ und „Anteil“ enthalten
+weiterhin absolute Häufigkeit bzw. Anteil an allen Spielen im aktuellen Filter.
+Ein kurzer Hinweis erklärt Peak = 100 Prozent. Standardcheckbox, X-Achse und
+gemeinsame absolute Y-Skala bleiben erhalten. Die bisherige Prozentanteil-
+Normierung und die spätere globale Prozentobergrenze sind damit abgelöst.
+Regressionen wurden an die präzisierte Anforderung angepasst: lokales Maximum
+nach beiden Filtern, verschiedene App-Zähler, Nullfall und feste Achsen.
+Abnahme: In beiden Apps alle zwölf Kombinationen wechseln; der höchste sichtbare
+Balken muss jeweils 100 Prozent erreichen, ohne dass die Seite neu lädt.
 
 

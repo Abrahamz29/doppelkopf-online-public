@@ -1,6 +1,6 @@
 """Small aggregate-only bar charts with browser-local KPI selection."""
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
 
@@ -48,16 +48,6 @@ PAIR_BAR_METRICS: dict[str, Callable[[PairStatistics], int | Decimal]] = {
 }
 
 
-def _normalized_frequency_ceiling(frequencies: Iterable[Mapping[int, int]]) -> Decimal:
-    """Round the largest share across all filters up to an exact five-percent step."""
-    steps = 1
-    for frequency in frequencies:
-        total = sum(frequency.values())
-        if total:
-            steps = max(steps, (20 * max(frequency.values()) + total - 1) // total)
-    return Decimal(steps) / Decimal(20)
-
-
 def render_point_distribution(statistics: Statistics) -> None:
     """Switch aggregate frequencies in the browser, keeping the overall X axis."""
     distributions = {
@@ -83,7 +73,6 @@ def render_point_distribution(statistics: Statistics) -> None:
                 strict=True,
             )
         })
-    normalized_maximum = _normalized_frequency_ceiling(counts.values())
     st.vega_lite_chart(
         [{"Punktewert": points,
           **{name: frequency.get(points, 0) for name, frequency in counts.items()}}
@@ -108,11 +97,15 @@ def render_point_distribution(statistics: Statistics) -> None:
                 {"calculate": "point_distribution", "as": "Auswahl"},
                 {"joinaggregate": [
                     {"op": "sum", "field": "Häufigkeit", "as": "Spiele im Filter"},
+                    {"op": "max", "field": "Häufigkeit", "as": "Peak im Filter"},
                 ]},
                 {"calculate": "datum['Spiele im Filter'] > 0 "
                               "? datum['Häufigkeit'] / datum['Spiele im Filter'] : 0",
                  "as": "Anteil"},
-                {"calculate": "normalize_distribution ? datum.Anteil : datum['Häufigkeit']",
+                {"calculate": "datum['Peak im Filter'] > 0 "
+                              "? datum['Häufigkeit'] / datum['Peak im Filter'] : 0",
+                 "as": "Peakhöhe"},
+                {"calculate": "normalize_distribution ? datum['Peakhöhe'] : datum['Häufigkeit']",
                  "as": "Darstellung"},
                 {"calculate": "bock_distribution", "as": "Bockfilter"},
             ],
@@ -126,14 +119,14 @@ def render_point_distribution(statistics: Statistics) -> None:
                     "field": "Darstellung", "type": "quantitative",
                     "scale": {
                         "domainMin": 0, "nice": False,
-                        "domainMax": {"expr": f"normalize_distribution ? {normalized_maximum} : "
+                        "domainMax": {"expr": "normalize_distribution ? 1 : "
                                       f"{max(1, max(counts['Gesamt'].values()))}"},
                     },
                     "axis": {"title": "Häufigkeit",
                              "labelExpr": "normalize_distribution "
                                           "? format(datum.value, '.0%') : format(datum.value, 'd')",
                              "tickCount": 6,
-                             "tickMinStep": {"expr": "normalize_distribution ? 0.01 : 1"},
+                             "tickMinStep": {"expr": "normalize_distribution ? 0.2 : 1"},
                              "minExtent": 45, "maxExtent": 45},
                 },
                 "tooltip": [
@@ -141,6 +134,7 @@ def render_point_distribution(statistics: Statistics) -> None:
                     {"field": "Bockfilter", "type": "nominal"},
                     {"field": "Punktewert", "type": "ordinal"},
                     {"field": "Häufigkeit", "type": "quantitative"},
+                    {"field": "Peakhöhe", "type": "quantitative", "format": ".1%"},
                     {"field": "Anteil", "type": "quantitative", "format": ".1%"},
                 ],
             }}, {
@@ -158,6 +152,7 @@ def render_point_distribution(statistics: Statistics) -> None:
         },
         key="statistics-point-distribution-chart", on_select="ignore",
     )
+    st.caption("Normalisieren: höchster Balken je Filterauswahl = 100 %.")
 
 
 
