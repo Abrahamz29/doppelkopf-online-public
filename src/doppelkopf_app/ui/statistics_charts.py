@@ -66,10 +66,32 @@ def render_point_distribution(statistics: Statistics) -> None:
     frequency = distributions[selection]
     if not frequency:
         st.info("Für diesen Filter sind keine Spiele vorhanden.")
+    point_values = [points for points, _count in statistics.point_frequency]
+    if not point_values:
         return
-    st.bar_chart(
-        [{"Punktewert": points, "Häufigkeit": count} for points, count in frequency],
-        x="Punktewert", y="Häufigkeit",
+    counts = dict(frequency)
+    st.vega_lite_chart(
+        [{"Punktewert": points, "Häufigkeit": counts.get(points, 0)} for points in point_values],
+        {
+            "mark": {"type": "bar"},
+            "encoding": {
+                "x": {
+                    "field": "Punktewert", "type": "ordinal", "sort": point_values,
+                    "scale": {"domain": point_values},
+                    "axis": {"values": point_values, "labelAngle": -90},
+                },
+                "y": {
+                    "field": "Häufigkeit", "type": "quantitative",
+                    "axis": {"format": "d", "tickMinStep": 1,
+                             "minExtent": 45, "maxExtent": 45},
+                },
+                "tooltip": [
+                    {"field": "Punktewert", "type": "ordinal"},
+                    {"field": "Häufigkeit", "type": "quantitative"},
+                ],
+            },
+        },
+        key="statistics-point-distribution-chart",
     )
 
 
