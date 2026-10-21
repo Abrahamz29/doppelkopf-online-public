@@ -103,5 +103,29 @@ verlorene Solos, mehrfache Böcke, feste Achsen und Standardwerte ab.
 Abnahme: In beiden Gesamtstatistiken alle drei Bockfilter mit jeder Parteiauswahl
 und mit/ohne Normalisierung durchschalten; Mit Bock muss Ohne Bock plus Nur Bock
 ergeben. Checkbox und beide Filter müssen unabhängig bleiben.
+Cloud-Abnahme nach Deploy von `2121ad6`/`27f1c91` erfolgreich: In beiden Apps
+alle zwölf Kombinationen jeweils normalisiert und absolut geprüft. Online:
+1700 = 1456 ohne Bock + 244 Bockspiele; normale App: 154 = 110 + 44.
+Die Aufteilung stimmt auch je Punktewert und Parteiauswahl. Prozentanteile
+summieren sich je Kombination zu 100 Prozent; absolute Balkenhöhen entsprechen
+ihren Häufigkeiten. X und Y bleiben in beiden Modi fest, Seitenlauf-Marker
+unverändert; Standardansicht anschließend wiederhergestellt. Ruff/Mypy erfolgreich,
+546 Tests bestanden/28 übersprungen; Online-Veröffentlichungsrepository 29 bestanden.
+
+Anpassung Prozentachse vom 21.10.2026: Statt pauschal 0–100 Prozent reicht die
+normalisierte Y-Achse nun bis zum höchsten Balkenanteil über alle zwölf möglichen
+Partei-/Bockfilterkombinationen der gewählten Auswertung, auf volle fünf
+Prozentpunkte aufgerundet (mindestens fünf Prozent). Beispiel: größter Anteil
+21,4 Prozent ergibt eine gemeinsame Achse 0–25 Prozent. Ein Teilfilter mit
+66,7 Prozent setzt die gemeinsame Grenze auf 70 Prozent, auch wenn Gesamt nur
+20 Prozent erreicht. Leere Filter beeinflussen das Maximum nicht; ein einzelner
+Punktewert mit allen Treffern erfordert weiterhin 100 Prozent. Die Berechnung
+verwendet exakte Integer-Aufrundung und Decimal; exakt 30 Prozent bleiben 30.
+Filterwechsel behalten dieselbe Y-Achse und Teilung. Die absolute Y-Skala bleibt
+unverändert. Der Abstand der Prozentmarken passt sich der kleineren Skala an.
+Regressionen in `test_statistics_charts.py` sichern Rundungsgrenzen, leere
+Auswahlen und das Maximum einer kombinierten Bockauswahl ab.
+Abnahme: In beiden Apps alle zwölf Kombinationen durchschalten; kein Balken darf
+abgeschnitten werden und die Prozentachse muss in allen Kombinationen gleich bleiben.
 
 
