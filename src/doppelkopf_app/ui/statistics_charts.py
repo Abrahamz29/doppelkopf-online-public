@@ -84,7 +84,7 @@ def render_point_distribution(statistics: Statistics) -> None:
                 "bind": {"input": "select", "options": list(distributions),
                          "name": "Punkteverteilung für"},
             }, {
-                "name": "normalize_distribution", "value": True,
+                "name": "normalize_distribution", "value": False,
                 "bind": {"input": "checkbox", "name": "Normalisieren"},
             }, {
                 "name": "bock_distribution", "value": "Mit Bock",

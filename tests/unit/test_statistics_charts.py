@@ -76,7 +76,7 @@ def test_distribution_keeps_overall_x_scale_and_ticks(selection, expected):
         {"calculate": "point_distribution", "as": "Auswahl"},
     ]
     assert spec["params"][1] == {
-        "name": "normalize_distribution", "value": True,
+        "name": "normalize_distribution", "value": False,
         "bind": {"input": "checkbox", "name": "Normalisieren"},
     }
     assert spec["params"][2] == {

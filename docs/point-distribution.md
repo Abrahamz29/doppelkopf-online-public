@@ -153,5 +153,24 @@ Regressionen wurden an die präzisierte Anforderung angepasst: lokales Maximum
 nach beiden Filtern, verschiedene App-Zähler, Nullfall und feste Achsen.
 Abnahme: In beiden Apps alle zwölf Kombinationen wechseln; der höchste sichtbare
 Balken muss jeweils 100 Prozent erreichen, ohne dass die Seite neu lädt.
+Cloud-Abnahme nach Deploy von `d97b82e`/`515c691` erfolgreich: In beiden
+Gesamtstatistiken alle zwölf Kombinationen geprüft; jeder nichtleere Plot hat
+exakt Peakhöhe 1, und jeder weitere Balken entspricht Häufigkeit/eigenem Peak.
+Individuelle Rohpeaks online beispielsweise Gesamt 211, Re 118, Solo Re/Nur Bock
+12; normale App Gesamt 31, Re 14, Solo Re/Nur Bock 2. X-/Y-Achsen und Seitenlauf
+bleiben beim Wechsel unverändert. Leerer Solo-Filter ebenfalls geprüft: Peak 0,
+keine ungültigen Werte, Hinweis sichtbar. Absolute Häufigkeiten und ihre feste
+Y-Skala unverändert; normalisierte Standardansicht wiederhergestellt.
+Ruff/Mypy erfolgreich, Hauptrepository 547 Tests bestanden/28 übersprungen;
+Online-Veröffentlichungsrepository 30 bestanden. Die acht Tests zur abgelösten
+globalen Prozentobergrenze wurden durch Prüfungen der lokalen Peak-Normierung ersetzt.
+
+Standardänderung vom 21.10.2026: „Normalisieren“ ist beim Öffnen oder Neuaufbau
+der Auswertung nun standardmäßig ausgeschaltet. Startansicht sind absolute
+Häufigkeiten; manuelles Einschalten aktiviert unverändert die Peak-Normierung.
+Filterwechsel behalten die gewählte Einstellung. Domain- und Achsenregeln bleiben
+unverändert. Diagramm- und UI-Tests erwarten den deaktivierten Standard.
+Abnahme: In beiden Apps Statistik neu öffnen, leere Checkbox und absolute
+Y-Beschriftung prüfen; Checkbox einschalten und Peak = 100 Prozent prüfen.
 
 
