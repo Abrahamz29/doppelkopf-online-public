@@ -14,7 +14,7 @@ from doppelkopf_app.ui.charts import (
 )
 from doppelkopf_app.ui.layout import page_heading
 from doppelkopf_app.ui.runtime import get_service
-from doppelkopf_app.ui.statistics_charts import render_statistics_bars
+from doppelkopf_app.ui.statistics_charts import render_point_distribution, render_statistics_bars
 
 
 def _decimal(value: Decimal) -> str:
@@ -141,14 +141,7 @@ with left.container(border=True):
 
 with right.container(border=True):
     st.markdown("**Punkteverteilung**")
-    st.bar_chart(
-        [
-            {"Punktewert": points, "Häufigkeit": frequency}
-            for points, frequency in statistics.point_frequency
-        ],
-        x="Punktewert",
-        y="Häufigkeit",
-    )
+    render_point_distribution(statistics)
 
 if selected_session_id is not None:
     window_key = "tempo-window-minutes"

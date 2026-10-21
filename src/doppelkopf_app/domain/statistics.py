@@ -108,6 +108,9 @@ class Statistics:
     round_point_values: tuple[tuple[int, int], ...]
     cumulative_points: tuple[tuple[int, tuple[tuple[str, int], ...]], ...]
     cumulative_wins: tuple[tuple[int, tuple[tuple[str, int], ...]], ...]
+    re_point_frequency: tuple[tuple[int, int], ...]
+    kontra_point_frequency: tuple[tuple[int, int], ...]
+    solo_re_point_frequency: tuple[tuple[int, int], ...]
 
 
 def calculate_statistics(
@@ -140,6 +143,9 @@ def calculate_statistics(
     pair_losses: Counter[tuple[str, str]] = Counter()
     pair_points: Counter[tuple[str, str]] = Counter()
     frequency: Counter[int] = Counter()
+    re_frequency: Counter[int] = Counter()
+    kontra_frequency: Counter[int] = Counter()
+    solo_re_frequency: Counter[int] = Counter()
     running_wins = Counter({name: 0 for name in player_order})
     cumulative_points = []
     cumulative_wins = []
@@ -199,6 +205,17 @@ def calculate_statistics(
             solo_count += 1
             if not is_zero:
                 solo_player = winners[0] if len(winners) == 1 else losers[0]
+
+        # Each game contributes once, using the same absolute value as the
+        # overall distribution (the soloist's tripled score for solos).
+        if not is_zero:
+            if is_solo:
+                if item.declaring_party is DeclaringParty.RE:
+                    solo_re_frequency[round_point_value] += 1
+            elif item.declaring_party is DeclaringParty.RE:
+                re_frequency[round_point_value] += 1
+            elif item.declaring_party is DeclaringParty.KONTRA:
+                kontra_frequency[round_point_value] += 1
 
         for name in player_order:
             if name not in score:
@@ -318,6 +335,9 @@ def calculate_statistics(
         round_point_values=tuple(round_point_values),
         cumulative_points=tuple(cumulative_points),
         cumulative_wins=tuple(cumulative_wins),
+        re_point_frequency=tuple(sorted(re_frequency.items())),
+        kontra_point_frequency=tuple(sorted(kontra_frequency.items())),
+        solo_re_point_frequency=tuple(sorted(solo_re_frequency.items())),
     )
 
 

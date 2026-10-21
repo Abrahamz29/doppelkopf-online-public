@@ -48,6 +48,31 @@ PAIR_BAR_METRICS: dict[str, Callable[[PairStatistics], int | Decimal]] = {
 }
 
 
+@st.fragment
+def render_point_distribution(statistics: Statistics) -> None:
+    """Filter precomputed frequencies without reloading the statistics page."""
+    distributions = {
+        "Gesamt": statistics.point_frequency,
+        "Re (Normalspiel)": statistics.re_point_frequency,
+        "Kontra (Normalspiel)": statistics.kontra_point_frequency,
+        "Solo Re": statistics.solo_re_point_frequency,
+    }
+    selection = st.selectbox(
+        "Punkteverteilung für", distributions, key="statistics-point-distribution",
+        help="Re und Kontra: gewonnene Normalspiele ohne Solos. "
+        "Solo Re: gewonnene Solos, mit dem dreifachen Punktewert des Solisten. "
+        "Gesamt: alle Spiele einschließlich verlorener Solos und Nullrunden.",
+    )
+    frequency = distributions[selection]
+    if not frequency:
+        st.info("Für diesen Filter sind keine Spiele vorhanden.")
+        return
+    st.bar_chart(
+        [{"Punktewert": points, "Häufigkeit": count} for points, count in frequency],
+        x="Punktewert", y="Häufigkeit",
+    )
+
+
 
 def render_statistics_bars(statistics: Statistics, *, pairs: bool = False) -> None:
     """Send one row per player/pair; switching KPI never requests a Python rerun."""
