@@ -1,11 +1,11 @@
 from collections import Counter
+from collections.abc import Sequence
 from decimal import Decimal
 
 import streamlit as st
 
 from doppelkopf_app.config import get_settings
-from doppelkopf_app.domain.statistics import Statistics
-from doppelkopf_app.ui.chart_styles import player_line_styles
+from doppelkopf_app.ui.chart_styles import PlayerLineStyle, player_line_styles
 from doppelkopf_app.ui.charts import (
     render_points_progress,
     render_raw_tempo,
@@ -14,87 +14,20 @@ from doppelkopf_app.ui.charts import (
 )
 from doppelkopf_app.ui.layout import page_heading
 from doppelkopf_app.ui.runtime import get_service
+from doppelkopf_app.ui.statistics_charts import render_statistics_bars
 
 
 def _decimal(value: Decimal) -> str:
     return f"{value.quantize(Decimal('0.01')):.2f}"
 
 
-PLAYER_BAR_METRICS = {
-    "Punkte insgesamt": lambda item: item.total_points,
-    "Höchster Sieg": lambda item: item.highest_win,
-    "Höchste Niederlage": lambda item: item.highest_loss,
-    "Spiele gewonnen": lambda item: item.games_won,
-    "Spiele verloren": lambda item: item.games_lost,
-    "Ø Punkte bei Sieg": lambda item: item.average_win_points,
-    "Ø Punkte bei Niederlage": lambda item: item.average_loss_points,
-    "Soli gespielt": lambda item: item.solos_played,
-    "Soli gewonnen": lambda item: item.solos_won,
-    "Soli verloren": lambda item: item.solos_lost,
-    "Solo-Punkte": lambda item: item.solo_points,
-    "Punkte ohne Soli": lambda item: item.points_without_solos,
-    "Solo-Bilanz": lambda item: item.solo_balance,
-    "Punkte durch Fremdsoli": lambda item: item.foreign_solo_points,
-    "Re gewonnen": lambda item: item.re_won,
-    "Re verloren": lambda item: item.re_lost,
-    "Re gewonnen %": lambda item: item.re_win_rate * 100,
-    "Re gespielt %": lambda item: item.re_play_rate * 100,
-    "Kontra gewonnen": lambda item: item.kontra_won,
-    "Kontra verloren": lambda item: item.kontra_lost,
-    "Kontra gewonnen %": lambda item: item.kontra_win_rate * 100,
-    "Ø Punkte gewonnene Re-Spiele": lambda item: item.average_re_win_points,
-    "Ø Punkte gewonnene Kontra-Spiele": lambda item: item.average_kontra_win_points,
-    "Ø Punkte verlorene Re-Spiele": lambda item: item.average_re_loss_points,
-    "Ø Punkte verlorene Kontra-Spiele": lambda item: item.average_kontra_loss_points,
-    "Bereinigt ohne Soli": lambda item: item.adjusted_without_solos,
-    "Bereinigt mit Soli": lambda item: item.adjusted_with_solos,
-    "Differenz zur Realität": lambda item: item.adjustment_difference,
-}
-PAIR_BAR_METRICS = {
-    "Spiele": lambda item: item.games,
-    "Gewonnen": lambda item: item.won,
-    "Verloren": lambda item: item.lost,
-    "Bilanz": lambda item: item.balance,
-    "Punkte": lambda item: item.points,
-    "Punkte pro Spiel": lambda item: item.points_per_game,
-}
-
-
 @st.fragment
-def _player_chart(statistics: Statistics) -> None:
-    metric = st.selectbox(
-        "Kennzahl im Balkendiagramm",
-        PLAYER_BAR_METRICS,
-        key="player-bar-metric",
-    )
-    getter = PLAYER_BAR_METRICS[metric]
-    st.bar_chart(
-        [
-            {"Spieler": item.name, metric: float(getter(item))}
-            for item in statistics.players
-        ],
-        x="Spieler",
-        y=metric,
-    )
-
-
-@st.fragment
-def _pair_chart(statistics: Statistics) -> None:
-    metric = st.selectbox(
-        "Kennzahl der Paare im Balkendiagramm",
-        PAIR_BAR_METRICS,
-        index=5,
-        key="pair-bar-metric",
-    )
-    getter = PAIR_BAR_METRICS[metric]
-    st.bar_chart(
-        [
-            {"Paar": " & ".join(item.players), metric: float(getter(item))}
-            for item in statistics.pairs
-        ],
-        x="Paar",
-        y=metric,
-    )
+def _history_chart(
+    rows: list[dict[str, int]], names: list[str], *, key: str,
+    styles: Sequence[PlayerLineStyle], value_label: str = "Punkte",
+) -> None:
+    """Keep browser label measurements local to this chart, without database reads."""
+    render_points_progress(rows, names, key=key, styles=styles, value_label=value_label)
 
 
 page_heading("Statistik", icon=":material/monitoring:")
@@ -171,10 +104,10 @@ with st.container(horizontal=True):
 left, right = st.columns(2)
 with left.container(border=True):
     st.markdown("**Spieler**")
-    _player_chart(statistics)
+    render_statistics_bars(statistics)
 with right.container(border=True):
     st.markdown("**Zusammenspiel**")
-    _pair_chart(statistics)
+    render_statistics_bars(statistics, pairs=True)
 
 left, right = st.columns(2)
 with left.container(border=True):
@@ -184,7 +117,7 @@ with left.container(border=True):
     )
 with right.container(border=True):
     st.markdown("**Kumulierter Punkteverlauf**")
-    render_points_progress(
+    _history_chart(
         [
             {"Spiel": sequence, **dict(values)}
             for sequence, values in statistics.cumulative_points
@@ -197,7 +130,7 @@ with right.container(border=True):
 left, right = st.columns(2)
 with left.container(border=True):
     st.markdown("**Kumulierte Siege**")
-    render_points_progress(
+    _history_chart(
         [
             {"Spiel": sequence, **dict(values)}
             for sequence, values in statistics.cumulative_wins

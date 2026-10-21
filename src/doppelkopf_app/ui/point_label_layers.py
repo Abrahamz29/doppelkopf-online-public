@@ -1,12 +1,19 @@
 """Native Vega-Lite layers for stable labels inside player-history plots."""
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 
 import streamlit as st
 
 from doppelkopf_app.ui.chart_styles import PlayerLineStyle
 from doppelkopf_app.ui.point_labels import LabelLayout, plan_point_labels
+
+
+@dataclass(frozen=True)
+class _CachedLayout:
+    signature: tuple[object, ...]
+    layout: LabelLayout | None
 
 
 def add_point_label_layers(
@@ -44,7 +51,21 @@ def add_point_label_layers(
     state_key = f"{key}-point-label-layout"
     saved = st.session_state.get(state_key)
     previous = saved if isinstance(saved, LabelLayout) else None
-    layout = plan_point_labels(rows, styles, metrics, domain, previous)
+    # Keep one exact result per chart/session, including unsuccessful searches.
+    # A measurement from another chart or an unrelated full rerun must not
+    # repeat the geometry search. Snapshot mutable rows and measured widths.
+    signature: tuple[object, ...] = (
+        tuple(tuple(sorted(row.items())) for row in rows), tuple(styles), domain,
+        metrics.width, metrics.height, metrics.font_size, metrics.text_half_height,
+        tuple(sorted(metrics.text_widths.items())),
+    )
+    cache_key = f"{key}-point-label-cache"
+    cached = st.session_state.get(cache_key)
+    if isinstance(cached, _CachedLayout) and cached.signature == signature:
+        layout = cached.layout
+    else:
+        layout = plan_point_labels(rows, styles, metrics, domain, previous)
+        st.session_state[cache_key] = _CachedLayout(signature, layout)
     if layout is None:
         return
     st.session_state[state_key] = layout
