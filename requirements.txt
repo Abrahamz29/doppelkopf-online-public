@@ -1,3 +1,1 @@
--c constraints.txt
--e .
-segno>=1.6.6,<1.7
+streamlit==1.64.0
